@@ -9,8 +9,10 @@ const User = require('../models/User');
 // creating a middleware for auth 
 exports.auth = async(req, res, next) => {
     try {
-        // fetching token form the body, heaeder, cookie
-        const {token} = req.cookies || req.body || req.header("Authorization").replace("Bearer ",  "");
+        // fetching token from cookie, body, or Authorization header
+        const token = req.cookies?.token 
+            || req.body?.token 
+            || req.header("Authorization")?.replace("Bearer ", "");
         // if token is missing
         if(!token){
             return res.status(401).json({

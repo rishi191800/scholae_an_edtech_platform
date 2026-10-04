@@ -72,7 +72,7 @@ exports.deleteProfile = async (req, res) => {
             });
         }
         // fetching user details for delete profile, courses and courseProgress first after that delete user form the schema note- this is my point of view
-        const userDetails = await User.findById({ _id: id }).populate('additonalDetails').exec().populate('courses').exec().populate('courseProgress').exec();
+        const userDetails = await User.findById({ _id: id });
         // validating userDetails
         if (!userDetails) {
             return res.status(404).json({
@@ -81,13 +81,13 @@ exports.deleteProfile = async (req, res) => {
             });
         }
         // now delete user Profile (additonal Details)
-        await Profile.findByIdAndDelete({ _id: userDetails.additionalDetails._id });
+        await Profile.findByIdAndDelete({ _id: userDetails.additionalDetails });
         // now find the length of the courses if available
         const courseLength = userDetails.courses.length;
         // traversing the array of the courses
         for (let index = 0; index < courseLength; index++) {
             // fetching courses note - first unenrolled the student from the course section
-            const courseDetails = await Course.findByIdAndUpdate({ _id: userDetails.courses[index] }, { $pop: { studentsEnrolled: userDetails._id } }, { new: true }).populate('courses').exec().populate('studentsEnrolled').exec();
+            const courseDetails = await Course.findByIdAndUpdate({ _id: userDetails.courses[index] }, { $pop: { studentsEnrolled: userDetails._id } }, { new: true }).populate({path: "courses", populate: {path: "studentsEnrolled", populate: {path: "additionalDetails"}}});
             // validating courseDetails
             if (!courseDetails) {
                 return res.status(401).json({
@@ -125,7 +125,7 @@ exports.updateProfilePicture = async (req, res) => {
             return res.status(401).json({
                 success: false,
                 message: "all fields are required",
-                data: {profilePicture, id}
+                data: { profilePicture, id }
             });
         }
         // uploading profile picture to cloudinary
@@ -176,7 +176,7 @@ exports.getAllUserDetials = async (req, res) => {
             });
         }
         // fetching user details
-        const userDetails = await User.findById({ _id: id }).populate({path: "additionalDetails"}).populate({path: "courses", populate: {path: "courseContent", populate: {path: "subSection"}}}).exec();
+        const userDetails = await User.findById({ _id: id }).populate({ path: "additionalDetails" }).populate({ path: "courses", populate: { path: "courseContent", populate: { path: "subSection" } } }).exec();
         // validating user details
         if (!userDetails) {
             return res.status(401).json({
