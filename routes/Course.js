@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 
 // importing course controllers
-const {createCourse, getAllCourses, editCourse, getCourseDetails, deleteCourse} = require('../controllers/Course');
+const {createCourse, getAllCourses, editCourse, getCourseDetails, deleteCourse, getInstructorCourses, publishCourse} = require('../controllers/Course');
 
 // importing category controllers
 const {createCategory, getAllCategories, categoryPageDetails} = require('../controllers/Category');
@@ -41,7 +41,9 @@ router.post('/updateSubSection', auth, isInstructor, updateSubSection);
 // delete sub section only can be deleted by instructor
 router.post('/deleteSubSection', auth, isInstructor, deleteSubSection);
 // get instructor course details only when user is an instructor
-// router.get('/getInstructorCourse', auth, isInstructor, getInstructorCourse); 
+// publish course only can be published by instructor
+router.post('/publishCourse', auth, isInstructor, publishCourse);
+router.get('/getInstructorCourses', auth, isInstructor, getInstructorCourses); 
 // get all courses
 router.get('/getAllCourses', getAllCourses);
 // get course details

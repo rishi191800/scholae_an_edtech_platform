@@ -7,11 +7,6 @@ const sectionSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    sectionDescription: {
-        type: String,
-        required: true,
-        trim: true
-    },
     subSection: [
         {
             type: mongoose.Schema.Types.ObjectId,

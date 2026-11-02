@@ -4,10 +4,10 @@ const express = require('express');
 const router = express.Router();
 
 // importing profile controllers
-const {updateProfile, getAllUserDetials, deleteProfile, updateProfilePicture} = require('../controllers/Profile');
+const {updateProfile, getAllUserDetials, deleteProfile, updateProfilePicture, getEnrolledCourses} = require('../controllers/Profile');
 
 // importing middleware 
-const {auth} = require('../middlewares/auth');
+const {auth, isStudent} = require('../middlewares/auth');
 
 
 // -------------------------- profile routes --------------------------
@@ -19,6 +19,8 @@ router.get('/getUserDetails', auth, getAllUserDetials);
 router.delete('/deleteProfile', auth, deleteProfile);
 // update profile picture only for those who are already logged in
 router.put('/updateProfilePicture', auth, updateProfilePicture);
+// get enrolled courses route for students only
+router.get('/getEnrolledCourses', auth, isStudent, getEnrolledCourses);
 
 
 // exporting router

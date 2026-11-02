@@ -4,10 +4,15 @@ const Profile = require('../models/Profile');
 const User = require('../models/User');
 // importing course schema
 const Course = require('../models/Course');
+// importing course progress schema
+const CourseProgress = require('../models/CourseProgress');
 // importing upload image to cloudinary for uploading profile picture
 const { uploadImageToCloudinary } = require('../utils/imageUploader');
 // importing dotenv config for accessing environement variable
 require('dotenv').config();
+// importing convet seconds to duration from utils
+const { convertSecondsToDuration } = require('../utils/secToDuration');
+
 
 
 // creating a function to update profile schema
@@ -87,7 +92,7 @@ exports.deleteProfile = async (req, res) => {
         // traversing the array of the courses
         for (let index = 0; index < courseLength; index++) {
             // fetching courses note - first unenrolled the student from the course section
-            const courseDetails = await Course.findByIdAndUpdate({ _id: userDetails.courses[index] }, { $pop: { studentsEnrolled: userDetails._id } }, { new: true }).populate({path: "courses", populate: {path: "studentsEnrolled", populate: {path: "additionalDetails"}}});
+            const courseDetails = await Course.findByIdAndUpdate({ _id: userDetails.courses[index] }, { $pop: { studentsEnrolled: userDetails._id } }, { new: true }).populate({ path: "courses", populate: { path: "studentsEnrolled", populate: { path: "additionalDetails" } } });
             // validating courseDetails
             if (!courseDetails) {
                 return res.status(401).json({
@@ -195,6 +200,67 @@ exports.getAllUserDetials = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal server error unable to get all user details",
+            error: error.message
+        });
+    }
+}
+
+
+// create a function to get enrolled user details
+exports.getEnrolledCourses = async (req, res) => {
+    try {
+        // fetching user id from the req.user
+        const { id } = req.user;
+        // validating user id
+        if (!id) {
+            return res.status(401).json({
+                success: false,
+                message: "user id not found"
+            });
+        }
+        // fetching user details and populate courses
+        let userDetails = await User.findById({ _id: id }).populate({ path: "courses", populate: { path: "courseContent", populate: { path: "subSection" } } }).exec();
+        // validating user details
+        if (!userDetails) {
+            return res.status(401).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        userDetails = userDetails.toObject()
+        var SubsectionLength = 0
+        for (var i = 0; i < userDetails.courses.length; i++) {
+            let totalDurationInSeconds = 0
+            SubsectionLength = 0
+            for (var j = 0; j < userDetails.courses[i].courseContent.length; j++) {
+                totalDurationInSeconds += userDetails.courses[i].courseContent[j].subSection.reduce((acc, curr) => acc + parseInt(curr.timeDuration), 0)
+                userDetails.courses[i].totalDuration = convertSecondsToDuration(totalDurationInSeconds);
+                SubsectionLength += userDetails.courses[i].courseContent[j].subSection.length
+            }
+            let courseProgressCount = await CourseProgress.findOne({ courseID: userDetails.courses[i]._id, id: id });
+            courseProgressCount = courseProgressCount?.completedVideos.length;
+            if (SubsectionLength === 0) {
+                userDetails.courses[i].progressPercentage = 100;
+            } else {
+                // To make it up to 2 decimal point
+                const multiplier = Math.pow(10, 2);
+                userDetails.courses[i].progressPercentage = Math.round((courseProgressCount / SubsectionLength) * 100 * multiplier) / multiplier;
+            }
+        }
+
+        // now all things are done return res 200
+        return res.status(200).json({
+            success: true,
+            message: "Enrolled courses fetched successfully",
+            data: userDetails.courses
+        });
+
+    } catch (error) {
+        console.log("error in getting enrolled courses");
+        return res.status(500).json({
+            success: false,
+            message: "Unable to get enrolled courses",
             error: error.message
         });
     }
